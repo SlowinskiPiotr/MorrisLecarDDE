@@ -1,3 +1,7 @@
+% on a laptop machine with Intel Core i7 (2.2 GHz) the computations will
+% take several hours, most of the loops can be changed to parfor loops to
+% speed up the computations
+
 close all
 clear
 
@@ -5,12 +9,12 @@ clear
 % functions generated using maple script: ml_dde_gen_my_sys.mw
 addpath('./System_Files/'); % add path to files with the system
 ml_dde_funcs=set_funcs('sys_rhs', @sys_rhs,...
-                       'sys_tau', @()17,...
-                       'sys_deri', @sys_deri,...
-                       'sys_dtau', @sys_dtau,...
-                       'sys_mfderi', @sys_mfderi,...
-                       'sys_ntau', @()1);
-                   
+    'sys_tau', @()17,...
+    'sys_deri', @sys_deri,...
+    'sys_dtau', @sys_dtau,...
+    'sys_mfderi', @sys_mfderi,...
+    'sys_ntau', @()1);
+
 %% change default method values
 method=df_mthod(ml_dde_funcs,'stst',1);
 method.continuation.plot=0;
@@ -24,23 +28,23 @@ method.stability.minimal_time_step=0.01;
 my_methods=method;
 
 %% setting parameters
-phi=0.125;  %1
+phi=0.0125; %1
 gca=4.0;    %2
-gl=2.0;     %3 
-gk=8.0;     %4 
-v1=-2.8;    %5 
-v2=26.0;    %6 
+gl=2.0;     %3
+gk=8.0;     %4
+v1=-2.8;    %5
+v2=26.0;    %6
 v3=12.0;    %7
 v4=17.4;    %8
 vl=-60.0;   %9
 vca=120.0;  %10
 vk=-91.893652410657; %11
-C=20.0;     %12
+C=200.0;     %12
 I=-60.0;    %13
 Kappa=1.8;  %14 %arbitrary choice so that the Hopf point is near I=15
 v_s=0.0;    %15
 Kappa_s=5.0;%16
-Tau=10.0;   %17
+Tau=100.0;   %17
 parameters=[phi, gca, gl, gk, v1, v2, v3, v4, vl, vca, vk, C, I, Kappa, v_s, Kappa_s, Tau];
 
 ind_C=12;
@@ -52,7 +56,7 @@ ind_Tau=17;
 x0=[-100;0]; %initial guess of an equilibrium
 stst_I=SetupStst(ml_dde_funcs,'parameter',parameters,'x',x0,'contpar',ind_I,'step',0.01);
 
-stst_I.parameter.max_step=[13,  0.1];
+stst_I.parameter.max_step= [13,  0.1];
 stst_I.parameter.min_bound=[13,  -60];
 stst_I.parameter.max_bound=[13,   60];
 
@@ -79,9 +83,9 @@ indhopf=find(abs(diff(nunst))==2);
 hopf_tk=SetupHopf(ml_dde_funcs,stst_I,indhopf,'contpar',[ind_Kappa,ind_Tau],'dir',14,'step',0.01,'plot',0);
 
 hopf_tk.parameter.free=[ind_Kappa ind_Tau];
-hopf_tk.parameter.max_step=[ind_Kappa 0.1;ind_Tau 0.1];    
-hopf_tk.parameter.min_bound=[ind_Kappa 0; ind_Tau -20];
-hopf_tk.parameter.max_bound=[ind_Kappa 300; ind_Tau 300];
+hopf_tk.parameter.max_step= [ind_Kappa 0.1; ind_Tau    1];
+hopf_tk.parameter.min_bound=[ind_Kappa   0; ind_Tau -200];
+hopf_tk.parameter.max_bound=[ind_Kappa 300; ind_Tau 3000];
 
 tic,
 hopf_tk=br_contn(ml_dde_funcs,hopf_tk,35000);
@@ -105,7 +109,7 @@ degree=3;
 k=1;
 
 for i=length(ind):-1:1
-    if points(i).parameter(17)>0 && points(i).parameter(17)<140
+    if points(i).parameter(17)>0 && points(i).parameter(17)<1400
         try  % just in case any the branches couldn's be started  (e.g. stariting with tau)
             points(i).parameter(14)=kappa_val; %we fix kappas
             
@@ -126,9 +130,9 @@ for i=length(ind):-1:1
             br_PO_k60_t(k).branch.point(2)=psol;
             br_PO_k60_t(k).branch.method.continuation.plot=0;
             
-            br_PO_k60_t(k).branch.parameter.min_bound=[ind_Tau  0];
-            br_PO_k60_t(k).branch.parameter.max_bound=[ind_Tau  200];
-            br_PO_k60_t(k).branch.parameter.max_step =[ind_Tau  0.2];
+            br_PO_k60_t(k).branch.parameter.min_bound=[ind_Tau 0];
+            br_PO_k60_t(k).branch.parameter.max_bound=[ind_Tau 2000];
+            br_PO_k60_t(k).branch.parameter.max_step =[ind_Tau 2];
             
             tic,
             br_PO_k60_t(k).branch=br_contn(ml_dde_funcs,br_PO_k60_t(k).branch,550);
@@ -149,10 +153,10 @@ end
 for i=1:15
     br_plot(br_PO_k60_t(i).branch,x_tau,p_ampl,'k')
 end
-% selected in colour (we choose the 1st branches and and a point with a
-% quite low amplitude)
+% selected in colour (we choose the 1st branches and a point with a
+% quite low amplitude - below the 1st fold)
 for i=[2 4 6 8 10 12 13 14 15]
-    br_plot(br_PO_k60_t(i).branch,x_tau,p_ampl) 
+    br_plot(br_PO_k60_t(i).branch,x_tau,p_ampl)
 end
 
 %% continue the solution in C and I to get to the values we want to analyse
@@ -164,22 +168,22 @@ p_period=p_ampl;
 p_period.field='period';
 p_period.col=1;
 
-t=  [11.5 26 42 57 72 86 102 116 132];
-brn=[2    4  6  8  10 12 13  14  15];
+tau_lst= [115 260 425 570 720 860 1020 1180 1317];
+brn= [2   4   6   8   10  12  13   14   15];
 
 move_PO_C=[];
 move_PO_I=[];
 
-for k=numel(t):-1:1
+for k=numel(tau_lst):-1:1 % if the continuation doesn't go all the way to C=5 and I=-37 try to choose adifferent starting tau
     i_brn=brn(k);
-    ind=find(diff(sign(arrayfun(@(x) x.parameter(17), br_PO_k60_t(i_brn).branch.point)-t(k)))~=0);
+    ind=find(diff(sign(arrayfun(@(x) x.parameter(17), br_PO_k60_t(i_brn).branch.point)-tau_lst(k)))~=0);
     if ~isempty(ind)
         ind=ind(1);
         try
             disp(k),
             disp(ind),
             disp(i_brn),
-            disp(t(k)),
+            disp(tau_lst(k)),
             move_PO_C(k).branch=br_PO_k60_t(i_brn).branch;
             move_PO_C(k).branch.method.point.adapt_mesh_before_correct=1;
             move_PO_C(k).branch.method.point.adapt_mesh_after_correct=1;
@@ -187,19 +191,19 @@ for k=numel(t):-1:1
             move_PO_C(k).branch.point=[];
             move_PO_C(k).branch.parameter.free=ind_C;
             move_PO_C(k).branch.parameter.max_step=[ind_C 0.1];
-            move_PO_C(k).branch.parameter.min_bound=[ind_C 0.5]; % this is the value of C that we want
-            move_PO_C(k).branch.parameter.max_bound=[ind_C 80];
+            move_PO_C(k).branch.parameter.min_bound=[ind_C 5]; % this is the value of C that we want
+            move_PO_C(k).branch.parameter.max_bound=[ind_C 800];
             
             p_ini=p_remesh(br_PO_k60_t(i_brn).branch.point(ind),4,64);
             
             [~,p_ampl]=df_measr(0,br_PO_k60_t(i_brn).branch);
             
             tic,
-            move_PO_C(k).branch=correct_ini(ml_dde_funcs,move_PO_C(k).branch,p_ini,12,-0.1,1);
+            move_PO_C(k).branch=correct_ini(ml_dde_funcs,move_PO_C(k).branch,p_ini,ind_C,-1,1);
             move_PO_C(k).branch=br_contn(ml_dde_funcs,move_PO_C(k).branch,5000);
             toc,
             
-            figure(1) %to see the branches that are being computed
+            figure(1) %ploting the branches that are being computed
             subplot(2,2,1)
             br_plot(br_PO_k60_t(i_brn).branch,x_tau,p_ampl)
             subplot(2,2,2)
@@ -212,32 +216,33 @@ for k=numel(t):-1:1
             pause(1)
         catch
         end
-    end
-    try
-        move_PO_I(k).branch=move_PO_C(k).branch;
-        move_PO_I(k).branch.method.point.adapt_mesh_before_correct=1;
-        move_PO_I(k).branch.method.point.adapt_mesh_after_correct=1;
         
-        move_PO_I(k).branch.point=[];
-        move_PO_I(k).branch.parameter.free=ind_I;
-        move_PO_I(k).branch.parameter.max_step=[ind_I 0.2];
-        move_PO_I(k).branch.parameter.min_bound=[ind_I -37]; % this is the final value of I that we want
-        move_PO_I(k).branch.parameter.max_bound=[ind_I 140];
-        
-        p_ini=move_PO_C(k).branch.point(end);
-
-        tic,
-        move_PO_I(k).branch=correct_ini(ml_dde_funcs,move_PO_I(k).branch,p_ini,13,-0.01,1);
-        move_PO_I(k).branch=br_contn(ml_dde_funcs,move_PO_I(k).branch,2500);
-        toc,
-        figure(2)
-        br_plot3(move_PO_I(k).branch,x_C,x_I,p_ampl)
-        drawnow
-        pause(1),
-    catch
+        try
+            move_PO_I(k).branch=move_PO_C(k).branch;
+            move_PO_I(k).branch.method.point.adapt_mesh_before_correct=1;
+            move_PO_I(k).branch.method.point.adapt_mesh_after_correct=1;
+            
+            move_PO_I(k).branch.point=[];
+            move_PO_I(k).branch.parameter.free=ind_I;
+            move_PO_I(k).branch.parameter.max_step=[ind_I 0.2];
+            move_PO_I(k).branch.parameter.min_bound=[ind_I -37]; % this is the final value of I that we want
+            move_PO_I(k).branch.parameter.max_bound=[ind_I 140];
+            
+            p_ini=move_PO_C(k).branch.point(end);
+            
+            tic,
+            move_PO_I(k).branch=correct_ini(ml_dde_funcs,move_PO_I(k).branch,p_ini,13,-0.01,1);
+            move_PO_I(k).branch=br_contn(ml_dde_funcs,move_PO_I(k).branch,2500);
+            toc,
+            figure(2)
+            br_plot3(move_PO_I(k).branch,x_C,x_I,p_ampl)
+            drawnow
+            pause(1),
+        catch
+        end
     end
 end
-%% now we continue the branches with I=-37 and C=0.5  in tau
+%% now we continue the branches with I=-37 and C=5  in tau
 PO_t=[];
 
 for k=1:9
@@ -248,32 +253,32 @@ for k=1:9
     PO_t(k).branch.method.point.adapt_mesh_after_correct=1;
     PO_t(k).branch.method.point.minimal_accuracy=1e-9;
     PO_t(k).branch.method.point.halting_accuracy=1e-11;
-
+    
     PO_t(k).branch.point=[];
     PO_t(k).branch.parameter.free=ind_Tau;
-    PO_t(k).branch.parameter.max_step=[ind_Tau 0.01];
+    PO_t(k).branch.parameter.max_step=[ind_Tau 1];
     
     PO_t(k).branch.parameter.min_bound=[ind_Tau 0];
-    PO_t(k).branch.parameter.max_bound=[ind_Tau max([55 t(k)+1])];
+    PO_t(k).branch.parameter.max_bound=[ind_Tau max([550 tau_lst(k)+10])];
     
     p_ini=move_PO_I(k).branch.point(end);
     
     tic,
     PO_t(k).branch=correct_ini(ml_dde_funcs,PO_t(k).branch,p_ini,17,0.01,1);
-    PO_t(k).branch=br_contn(ml_dde_funcs,PO_t(k).branch,2500);
+    PO_t(k).branch=br_contn(ml_dde_funcs,PO_t(k).branch,3000);
     toc,
     tic,
     PO_t(k).branch=br_rvers(PO_t(k).branch);
-    PO_t(k).branch=br_contn(ml_dde_funcs,PO_t(k).branch,2500);
+    PO_t(k).branch=br_contn(ml_dde_funcs,PO_t(k).branch,3000);
     toc,
 end
 
-%% we compute stability and trim to tau=57 
+%% we compute stability and trim to tau=570
 % (to save time, originally we needed higher values of tau to start the continution)
 
-for k=1:9 
-    idx1=find(arrayfun(@(x) x.parameter(17), PO_t(k).branch.point)<57,1,'first');
-    idx2=find(arrayfun(@(x) x.parameter(17), PO_t(k).branch.point)<57,1,'last');
+for k=1:9
+    idx1=find(arrayfun(@(x) x.parameter(17), PO_t(k).branch.point)<570,1,'first');
+    idx2=find(arrayfun(@(x) x.parameter(17), PO_t(k).branch.point)<570,1,'last');
     PO_t(k).branch.point=PO_t(k).branch.point(idx1:idx2);
     
     tic
@@ -290,25 +295,25 @@ for k=1:9
     subplot(1,2,1)
     br_splot(PO_t(k).branch,x_tau,p_ampl),
     axis square
-    xlim([0 55])
+    xlim([0 550])
     subplot(1,2,2)
     br_splot(PO_t(k).branch,x_tau,p_period),
     axis square
-    axis([0 55 0 55])
+    axis([0 550 0 550])
 end
 
 %% the 1st branch of the folds is tricky to compute we do it later
 for k=2:9
-        [tau_v,fold_PO_idx]=min(arrayfun(@(x) x.parameter(17), PO_t(k).branch.point));
+    [tau_v,fold_PO_idx]=min(arrayfun(@(x) x.parameter(17), PO_t(k).branch.point));
     
     tic,
     
     [ml_dde_foldfuncs,fold_PO_tk(k).branch]=SetupPOfold(ml_dde_funcs,PO_t(k).branch,fold_PO_idx,...
         'contpar',[ind_Kappa, ind_Tau],...
         'dir',ind_Kappa,'step',-0.1,...
-        'min_bound',[ind_Kappa,  0;   ind_Tau,0],...
-        'max_bound',[ind_Kappa, 70;  ind_Tau,55],...
-        'max_step', [ind_Kappa,0.5; ind_Tau,0.5]);
+        'min_bound',[ind_Kappa,  0; ind_Tau,  0],...
+        'max_bound',[ind_Kappa, 70; ind_Tau,550],...
+        'max_step', [ind_Kappa,0.5; ind_Tau,  5]);
     
     fold_PO_tk(k).branch.method.continuation.plot=0;
     fold_PO_tk(k).branch.method.continuation.plot_progress=0;
@@ -319,7 +324,7 @@ for k=2:9
     fold_PO_tk(k).branch=br_contn(ml_dde_foldfuncs,fold_PO_tk(k).branch,2500);
     fold_PO_tk(k).branch=br_rvers(fold_PO_tk(k).branch);
     fold_PO_tk(k).branch=br_contn(ml_dde_foldfuncs,fold_PO_tk(k).branch,2500);
-    disp(k)    
+    disp(k)
     toc,
     
     figure(1)
@@ -327,26 +332,29 @@ for k=2:9
     drawnow
     pause(1)
 end
-%% to check that the 1st fold branch is indeed a border of a region of stable solutions we use it initiate PO 
-% and to find a better point to start the computations 
+%% to check that the 1st fold branch is indeed a border of a region of stable solutions we use it to initiate PO
+% and to find a better point to start the computations
 
-taus=5:5:35;
+taus=50:50:350;
 
 br_plot3(PO_t(1).branch,x_tau,x_kappa,p_period) %a modified plotting function
 
 for kk=7:-1:1
-    ind=find(diff(sign(arrayfun(@(x) x.parameter(17), PO_t(1).branch.point)-taus(kk)))~=0); 
+    ind=find(diff(sign(arrayfun(@(x) x.parameter(17), PO_t(1).branch.point)-taus(kk)))~=0);
     % find points that are very close to the taus values
     
     % define new branch
     PO_k(kk).branch=PO_t(1).branch;
     PO_k(kk).branch.point=[];
     PO_k(kk).branch.parameter.free=ind_Kappa;
-
-    p_ini=PO_t(k).branch.point(ind);
+    PO_k(kk).branch.parameter.max_step=[ind_Kappa 0.01];
+    PO_k(kk).branch.parameter.min_bound=[ind_Kappa 0];
+    PO_k(kk).branch.parameter.max_bound=[ind_Kappa 70];
+    
+    p_ini=PO_t(1).branch.point(ind);
     
     tic,
-    PO_k(kk).branch=correct_ini(ml_dde_funcs,PO_t(1).branch,p_ini,ind_Kappa,0.01,1);
+    PO_k(kk).branch=correct_ini(ml_dde_funcs,PO_k(kk).branch,p_ini,ind_Kappa,-0.001,1);
     
     % we increase accuracy of the computations
     PO_k(kk).branch.point(1)=p_remesh(PO_k(kk).branch.point(1),4,64);
@@ -354,14 +362,10 @@ for kk=7:-1:1
     
     PO_k(kk).branch.method.point.adapt_mesh_before_correct=1;
     PO_k(kk).branch.method.point.adapt_mesh_after_correct=1;
-    PO_k(kk).branch.method.point.minimal_accuracy=1e-10;
-    PO_k(kk).branch.method.point.halting_accuracy=1e-12;
+    PO_k(kk).branch.method.point.minimal_accuracy=1e-9;
+    PO_k(kk).branch.method.point.halting_accuracy=1e-11;
     PO_k(kk).branch.method.stability.max_number_of_eigenvalues=10000;
     PO_k(kk).branch.method.stability.minimal_modulus=1e-8;
-    
-    PO_k(kk).branch.parameter.max_step=[ind_Kappa 0.01];
-    PO_k(kk).branch.parameter.min_bound=[ind_Kappa 0];
-    PO_k(kk).branch.parameter.max_bound=[ind_Kappa 70];
     
     tic,
     PO_k(kk).branch=br_contn(ml_dde_funcs,PO_k(kk).branch,2500);
@@ -389,9 +393,9 @@ for kk=5:-1:1
     PO_t_extra(kk).branch.point=[];
     
     PO_t_extra(kk).branch.parameter.free=ind_Tau;
-    PO_t_extra(kk).branch.parameter.max_step=[ind_Tau 0.1];
+    PO_t_extra(kk).branch.parameter.max_step=[ind_Tau 1];
     PO_t_extra(kk).branch.parameter.min_bound=[ind_Tau 0];
-    PO_t_extra(kk).branch.parameter.max_bound=[ind_Tau 55];
+    PO_t_extra(kk).branch.parameter.max_bound=[ind_Tau 550];
     
     % we increase accuracy of the computations
     PO_t_extra(kk).branch.method.point.adapt_mesh_before_correct=1;
@@ -403,7 +407,7 @@ for kk=5:-1:1
     
     p_ini=PO_k(2).branch.point(ind(1));
     
-    PO_t_extra(kk).branch=correct_ini(ml_dde_funcs,PO_t_extra(kk).branch,p_ini,ind_Tau,0.0001,1);
+    PO_t_extra(kk).branch=correct_ini(ml_dde_funcs,PO_t_extra(kk).branch,p_ini,ind_Tau,0.01,1);
     PO_t_extra(kk).branch.point(1)=p_remesh(PO_t_extra(kk).branch.point(1),4,64);
     PO_t_extra(kk).branch.point(2)=p_remesh(PO_t_extra(kk).branch.point(2),4,64);
     
@@ -419,7 +423,7 @@ for kk=5:-1:1
     toc,
     
     br_splot3(PO_t_extra(kk).branch,x_tau,x_kappa,p_period)
-    zlim([0 55])
+    zlim([0 550])
     drawnow,
     pause(0.5)
 end
@@ -431,9 +435,9 @@ k=1
 [ml_dde_foldfuncs,fold_PO_tk(k).branch]=SetupPOfold(ml_dde_funcs,PO_t_extra(1).branch,fold_PO_idx,...
     'contpar',[ind_Kappa, ind_Tau],...
     'dir',ind_Tau,'step',-0.0001,...
-    'min_bound',[ind_Kappa,  0;   ind_Tau,0],...
-    'max_bound',[ind_Kappa, 71;  ind_Tau,55],...
-    'max_step', [ind_Kappa,0.5; ind_Tau,0.5]);
+    'min_bound',[ind_Kappa,  0; ind_Tau,0],...
+    'max_bound',[ind_Kappa, 71; ind_Tau,550],...
+    'max_step', [ind_Kappa,0.5; ind_Tau,5]);
 
 % we increase accuracy of the computations
 fold_PO_tk(k).branch.point(1)=p_remesh(fold_PO_tk(k).branch.point(1),4,64);
@@ -448,16 +452,20 @@ fold_PO_tk(kk).branch.method.point.minimal_accuracy=1e-10;
 fold_PO_tk(kk).branch.method.point.halting_accuracy=1e-12;
 
 tic,
-fold_PO_tk(k).branch=br_contn(ml_dde_foldfuncs,fold_PO_tk(k).branch,2500);
+fold_PO_tk(k).branch=br_contn(ml_dde_foldfuncs,fold_PO_tk(k).branch,5500);
 fold_PO_tk(k).branch=br_rvers(fold_PO_tk(k).branch);
 toc,
 
 tic,
-fold_PO_tk(k).branch=br_contn(ml_dde_foldfuncs,fold_PO_tk(k).branch,2500);
+fold_PO_tk(k).branch=br_contn(ml_dde_foldfuncs,fold_PO_tk(k).branch,5500);
 toc,
 
 
 %% here we compute the period-doubling bifurcation
+% add some extra points to the PO_t_extra(3).branch branch to find more accurate estimate of the starting PD bifurcation 
+PO_t_extra(3).branch=br_refin(ml_dde_funcs,PO_t_extra(3).branch,x_tau,p_period,[39.8744   39.8918   63.5791   71.0869])
+PO_t_extra(3).branch=br_stabl(ml_dde_funcs,PO_t_extra(3).branch,0,1)
+%%
 tic
 nunst=GetStability(PO_t_extra(3).branch,'funcs',ml_dde_funcs,'exclude_trivial',1);
 PD_PO_idx=find(nunst>0,1,'first'),
@@ -467,29 +475,29 @@ PD_PO_idx=find(nunst>0,1,'first'),
 
 PO_t_extra(3).branch.method.point.newton_max_iterations=20;
 PO_t_extra(3).branch.method.point.newton_nmon_iterations=10;
+PO_t_extra(3).branch.method.point.print_residual_info=0;
 
-[PDfuncs,branchPD]=SetupPeriodDoubling(ml_dde_funcs,PO_t_extra(3).branch,PD_PO_idx,'contpar',[14,17],...
-    'dir',14,'step',1e-4,'min_bound',[14,0; 17,0],'max_bound',[14, 71; 17,55],...
-    'max_step',[14,0.1; 17,0.1]);
+[PDfuncs,branchPD]=SetupPeriodDoubling(ml_dde_funcs,PO_t_extra(3).branch,PD_PO_idx,'contpar',[ind_Kappa,ind_Tau],...
+    'dir',ind_Kappa,'step',1e-4,'min_bound',[ind_Kappa,0; ind_Tau,0],'max_bound',[ind_Kappa, 71; ind_Tau,550],...
+    'max_step',[ind_Kappa,0.1; ind_Tau,1]);
 
 branchPD.method.point.newton_max_iterations=20;
 branchPD.method.point.newton_nmon_iterations=10;
-branchPD.branch.method.point.minimal_accuracy=1e-10;
-branchPD.branch.method.point.halting_accuracy=1e-12;
-
+branchPD.branch.method.point.minimal_accuracy=1e-9;
+branchPD.branch.method.point.halting_accuracy=1e-11;
 branchPD.method.point.print_residual_info=0;
 
 tic,
-branchPD=br_contn(PDfuncs,branchPD,100);
+branchPD=br_contn(PDfuncs,branchPD,200);
 branchPD=br_rvers(branchPD);
 branchPD=br_contn(PDfuncs,branchPD,100);
 toc,
 
 %% plot the first fold branches, the period doubling branch and the solution branches
-for k=1:5 
+for k=1:5
     br_splot3(PO_t_extra(k).branch,x_tau,x_kappa,p_period)
 end
-for k=1:7 
+for k=1:7
     br_splot3(PO_k(k).branch,x_tau,x_kappa,p_period)
 end
 br_plot3(branchPD,x_tau,x_kappa,p_period,'k')
