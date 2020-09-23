@@ -9,7 +9,7 @@ The code assumes familiarity with Matlab and the DDE-BIFTOOL package.
 
 Any questions/ comments/ bugs please get in touch at p.m.slowinski@exeter.ac.uk
 
-## Files and foledrs
+## Files and folders
 * simulations.m - matlab script with a code to simulate the Morris–Lecar model with self coupling and delay (Figure 1 E and G in the paper)
 * bifurcation_diagrams.m - matlab script with a code to perfrom numerical bifurcation analysis of the Morris–Lecar model with self coupling and delay (Figure 1 A-D and F in the paper)
 * br_plot3.m - modified function br_plot.m from DDE-BIFTOOL v3.1.1 to allow 3D plots of the branches
