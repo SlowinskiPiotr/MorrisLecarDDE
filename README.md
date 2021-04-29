@@ -1,6 +1,6 @@
 # MorrisLecarDDE
 
-Repository with code used to perform numerical bifurcation analysis and run simulations presented in: "Robust spike timing in an excitable cell with delayed feedback" (accepted J. R. Soc. Interface)
+Repository with code used to perform numerical bifurcation analysis and run simulations presented in: "Robust spike timing in an excitable cell with delayed feedback" (https://royalsocietypublishing.org/doi/10.1098/rsif.2021.0029)
 
 The analysis was performed using the DDE-BIFTOOL v3.1.1 package (http://ddebiftool.sourceforge.net) in Matlab R2020a on macOS 10.14.6.
 
